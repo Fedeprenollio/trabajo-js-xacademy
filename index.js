@@ -250,13 +250,17 @@ const prueba = async()=>{
   }
 }
 prueba()
-// carrito.eliminarProducto("FN312PPE", 1)
-//   .then((precioTotal) => {
-//     console.log(`Producto eliminado. Precio total actualizado: ${precioTotal}`);
-//   })
-//   .catch((error) => {
-//     console.log(`Error al eliminar el producto: ${error}`);
-//   });
+
+// 3) Utilizar la función eliminarProducto utilizando .then() y .catch()
+
+
+carrito.eliminarProducto("FN312PPE", 1)
+  .then((precioTotal) => {
+    console.log(`Producto eliminado. Precio total actualizado: ${precioTotal}`);
+  })
+  .catch((error) => {
+    console.log(`Error al eliminar el producto: ${error}`);
+  });
 
 
   // carrito.agregarProducto("KS944RURs",4)
