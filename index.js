@@ -93,20 +93,18 @@ class Carrito {
     try {
       // Busco el producto en la "base de datos"
       const producto = await findProductBySku(sku);
-        console.log("Producto encontrado", producto);
+        // console.log("Producto encontrado", producto);
 
-      const istaEnCarrito = await this.productos.find(
-        (producto) => producto.sku === sku
-      );
+        const productoExistenteIndex = this.productos.findIndex((producto) => producto.sku === sku);
 
-      //BUSCO EL PRODUCTO EN LA LISTA DEL CARRITO; SI ESTA; NO LO AGREGO Y SALGO
-      if (istaEnCarrito) {
-        console.log(
-          "FEDE : ya lo tenes, solo actualizo la cantidad total sumando lo nuevo:",
-          istaEnCarrito
-        );
-        istaEnCarrito.cantidad += cantidad;
-      } else {
+      if (productoExistenteIndex !== -1) {
+        console.log("Producto existente:", this.productos[productoExistenteIndex]);
+        this.productos[productoExistenteIndex].cantidad += cantidad;
+        console.log("Ahora tiene en total: " ,this.productos[productoExistenteIndex].cantidad )
+        // Aquí puedes retornar un objeto o realizar alguna acción adicional si lo deseas
+        return { message: "El producto ya existe en el carrito. Se actualizó la cantidad." };
+      }
+      else {
         // Creo un producto nuevo
         const nuevoProducto = new ProductoEnCarrito(
           sku,
@@ -127,7 +125,7 @@ class Carrito {
       //FEDE: calculo el precio total del carrito
       //   this.precioTotal = this.precioTotal + producto.precio * cantidad;
       this.precioTotal = await this.calcularPrecioTotal();
-      console.log("Productos en el carrito luego de agregar:", this.productos);
+      console.log("Productos en el carrito luego de agregar:", this.productos.map(prod=>prod.nombre));
       console.log("Precio total luego de agregar:", this.precioTotal);
       console.log("Categorías en el carrito luego de agregar:", this.categorias);
       return { newProduct: producto}
@@ -140,53 +138,49 @@ class Carrito {
   eliminarProducto(sku, cantidad) {
     return new Promise(async (resolve, reject) => {
       console.log(`Eliminando ${cantidad} ${sku}`);
-      // setTimeout(() => {
       try {
-        
-        const   existeProducto = await findProductBySku(sku)
-           
-           if(!existeProducto) reject("No existe el producto en la base de datos")
-    
-          const productoExistente = this.productos.find((prod) => prod.sku === sku);
-          if (!productoExistente) {
-            reject(`Producto ${sku} no encontrado en el carrito`);
-            return;
-          }
-    
-          if (cantidad < productoExistente.cantidad) {
-            productoExistente.cantidad -= cantidad;
-          } else {
-            const index = this.productos.indexOf(productoExistente);
-            this.productos.splice(index, 1);
-          }
-         
-            
-            const listaCategorias  =  [... new Set( this.productos.map(producto=> producto.categoria))]
-            this.categorias= listaCategorias
-    
-          this.calcularPrecioTotal()
-            .then((precioTotal) =>{
-              console.log("Productos en el carrito:", this.productos);
-              console.log("Precio total:", precioTotal);
-              console.log("Categorías en el carrito:", this.categorias);
-              
-              // Resolve con el precio total actualizado
-              resolve(precioTotal);
-            })
-            .catch((error) => {
-              reject(error); // Rechaza la promesa con el error de calcularPrecioTotal
-            });
+        const existeProducto = await findProductBySku(sku);
+        if (!existeProducto) {
+          reject("No existe el producto en la base de datos");
+          return;
+        }
+  
+        const productoExistenteIndex = this.productos.findIndex((prod) => prod.sku === sku);
+        if (productoExistenteIndex === -1) {
+          reject(`Producto ${sku} no encontrado en el carrito`);
+          return;
+        }
+  
+        if (cantidad < this.productos[productoExistenteIndex].cantidad) {
+          this.productos[productoExistenteIndex].cantidad -= cantidad;
+          console.log(`Nueva cantidad de ${this.productos[productoExistenteIndex].nombre}: ${this.productos[productoExistenteIndex].cantidad}`);
+        } else {
+          this.productos.splice(productoExistenteIndex, 1);
+        }
+  
+        const listaCategorias = [...new Set(this.productos.map((producto) => producto.categoria))];
+        this.categorias = listaCategorias;
+  
+        // Calcula el precio total después de realizar las modificaciones
+        this.calcularPrecioTotal()
+          .then((precioTotal) => {
+            console.log("Productos en el carrito:", this.productos);
+            console.log("Precio total del carrito::", precioTotal);
+            console.log("Categorías en el carrito:", this.categorias);
+  
+            // Resolve con el precio total actualizado
+            resolve(precioTotal);
+          })
+          .catch((error) => {
+            reject(error); // Rechaza la promesa con el error de calcularPrecioTotal
+          });
       } catch (error) {
-        console.log(error)
+        console.log(error);
+        reject(error);
       }
-
-      //    .then(res=>{
-      //     return res
-      //    }).catch(err=> console.log(err))
-      // }, 3000);
     });
   }
-
+  
   calcularPrecioTotal() {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -242,27 +236,28 @@ const carrito = new Carrito();
 const prueba = async()=>{
   try {
     await carrito.agregarProducto("KS944RUR", 2); // Agrega 2 productos con SKU "KS944RUR"
-   await  carrito.agregarProducto("FN312PPE", 3); // Agrega 3 productos con SKU "FN312PPE"
-  await   carrito.agregarProducto("XX92LKI", 1); // Agrega 1 producto con SKU "XX92LKI"
-  await carrito.agregarProducto("PV332MAAAAAAAAAAAAAAAAAAAAAAAAAaaJ",3)
+   await  carrito.agregarProducto("KS944RUR", 3); // Agrega 3 productos con SKU "FN312PPE"
+   await  carrito.eliminarProducto("KS944RUR", 5);
+  await   carrito.eliminarProducto("XX92LKI", 1); // Agrega 1 producto con SKU "XX92LKI"
+  // await carrito.agregarProducto("PV332MAAAAAAAAAAAAAAAAAAAAAAAAAaaJ",3)
     
-   await carrito.eliminarProducto("FN312PPE",32)
-   await carrito.eliminarProducto("FN312PPE",32)
+  //  await carrito.eliminarProducto("FN312PPE",32)
+  //  await carrito.eliminarProducto("FN312PPE",32)
 
   
   } catch (error) {
     console.error(error)
   }
 }
-// prueba()
+prueba()
+// carrito.eliminarProducto("FN312PPE", 1)
+//   .then((precioTotal) => {
+//     console.log(`Producto eliminado. Precio total actualizado: ${precioTotal}`);
+//   })
+//   .catch((error) => {
+//     console.log(`Error al eliminar el producto: ${error}`);
+//   });
 
-carrito.eliminarProducto("KS944RUR2", 2)
-  .then((precioTotal) => {
-    console.log(`Producto eliminado. Precio total actualizado: ${precioTotal}`);
-  })
-  .catch((error) => {
-    console.log(`Error al eliminar el producto: ${error}`);
-  });
 
   // carrito.agregarProducto("KS944RURs",4)
   //   .then(res=>console.log(res))
